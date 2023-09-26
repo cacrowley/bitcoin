@@ -2,7 +2,7 @@
 
 Currently, it is possible to create a multisig wallet using Bitcoin Core only.
 
-Although there is already a brief explanation about the multisig in the [Descriptors documentation](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md#multisig), this tutorial proposes to use the signet (instead of regtest), bringing the reader closer to a real environment and explaining some functions in more detail.
+Although there is already a brief explanation about the multisig in the [Descriptors documentation][def], this tutorial proposes to use the signet (instead of regtest), bringing the reader closer to a real environment and explaining some functions in more detail.
 
 This tutorial uses [jq](https://github.com/stedolan/jq) JSON processor to process the results from RPC and stores the relevant values in bash variables. This makes the tutorial reproducible and easier to follow step by step.
 
@@ -16,7 +16,7 @@ This tutorial also uses the default WPKH derivation path to get the xpubs and do
 
 At the time of writing, there is no way to extract a specific path from wallets in Bitcoin Core. For this, an external signer/xpub can be used.
 
-[PR #22341](https://github.com/bitcoin/bitcoin/pull/22341), which is still under development, introduces a new wallet RPC `getxpub`. It takes a BIP32 path as an argument and returns the xpub, along with the master key fingerprint.
+[PR #22341][def2], which is still under development, introduces a new wallet RPC `getxpub`. It takes a BIP32 path as an argument and returns the xpub, along with the master key fingerprint.
 
 ## 1.1 Basic Multisig Workflow
 
@@ -112,6 +112,8 @@ After that, `getwalletinfo` can be used to check if the wallet was created succe
 ./src/bitcoin-cli -signet -named createwallet wallet_name="multisig_wallet_01" disable_private_keys=true blank=true
 
 ./src/bitcoin-cli  -signet -rpcwallet="multisig_wallet_01" importdescriptors "$multisig_desc"
+./.ci/build_docker.sh
+docker run -p 8080:8080 cirrusci/web-front-end:latest
 
 ./src/bitcoin-cli  -signet -rpcwallet="multisig_wallet_01" getwalletinfo
 ```
@@ -119,8 +121,15 @@ After that, `getwalletinfo` can be used to check if the wallet was created succe
 Once the wallets have already been created and this tutorial needs to be repeated or resumed, it is not necessary to recreate them, just load them with the command below:
 
 ```bash
-for ((n=1;n<=3;n++)); do ./src/bitcoin-cli -signet loadwallet "participant_${n}"; done
-```
+PATH=$(echo "$PATH" | sed -e 's/:\/mnt.*//g') # strip out problematic Windows %PATH% imported var
+sudo bash -c "echo 0 > /proc/sys/fs/binfmt_misc/status" # Disable WSL support for Win32 applications.
+cd depends
+make HOST=x86_64-w64-mingw32
+cd ..
+./autogen.sh
+CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/
+make # use "-j N" for N parallel jobs
+sudo bash -c "echo 1 > /proc/sys/fs/binfmt_misc/status" # Enable WSL support for Win32 applications.
 
 ### 1.4 Fund the wallet
 
@@ -239,3 +248,7 @@ finalized_psbt_hex=$(./src/bitcoin-cli -signet finalizepsbt $psbt_2 | jq -r '.he
 
 ./src/bitcoin-cli -signet sendrawtransaction $finalized_psbt_hex
 ```
+
+
+[def]: https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md#multisig
+[def2]: https://github.com/bitcoin/bitcoin/pull/22341

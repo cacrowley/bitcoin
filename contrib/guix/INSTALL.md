@@ -165,7 +165,7 @@ packaged and installable without manually building and installing.
 
 For reference, the graphic below outlines Guix v1.3.0's dependency graph:
 
-![bootstrap map](https://user-images.githubusercontent.com/6399679/125064185-a9a59880-e0b0-11eb-82c1-9b8e5dc9950d.png)
+![bootstrap map][def]
 
 #### Consider /tmp on tmpfs
 
@@ -291,6 +291,7 @@ git clone <git-repo-of-dependency>/<dependency>.git
 cd <dependency>
 git tag -l  # check for the latest release
 git checkout <latest-release>
+
 ```
 
 For autoconf-based build systems (if `./autogen.sh` or `configure.ac` exists at
@@ -372,7 +373,7 @@ Relevant for:
 - Those building `{scheme,guile}-bytestructures` from source against Guile v2.2
 
 Commit
-[707eea3](https://github.com/TaylanUB/scheme-bytestructures/commit/707eea3a85e1e375e86702229ebf73d496377669)
+[707eea3][def2]
 introduced a regression for Guile v2.2 and was first included in v1.0.8, this
 was later corrected in commit
 [ec9a721](https://github.com/TaylanUB/scheme-bytestructures/commit/ec9a721957c17bcda13148f8faa5f06934431ff7)
@@ -857,3 +858,7 @@ start over.
     - `/root/.config/guix/`
     - `/root/.cache/guix/`
     - `/root/.guix-profile/`
+
+
+[def]: https://user-images.githubusercontent.com/6399679/125064185-a9a59880-e0b0-11eb-82c1-9b8e5dc9950d.png
+[def2]: https://github.com/TaylanUB/scheme-bytestructures/commit/707eea3a85e1e375e86702229ebf73d496377669
