@@ -718,47 +718,55 @@ BOOST_AUTO_TEST_CASE(get_local_addr_for_peer_port)
 
 BOOST_AUTO_TEST_CASE(LimitedAndReachable_Network)
 {
-    BOOST_CHECK(IsReachable(NET_IPV4));
-    BOOST_CHECK(IsReachable(NET_IPV6));
-    BOOST_CHECK(IsReachable(NET_ONION));
-    BOOST_CHECK(IsReachable(NET_I2P));
-    BOOST_CHECK(IsReachable(NET_CJDNS));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_IPV4));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_IPV6));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_ONION));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_I2P));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_CJDNS));
 
-    SetReachable(NET_IPV4, false);
-    SetReachable(NET_IPV6, false);
-    SetReachable(NET_ONION, false);
-    SetReachable(NET_I2P, false);
-    SetReachable(NET_CJDNS, false);
+    g_reachable_nets.Remove(NET_IPV4);
+    g_reachable_nets.Remove(NET_IPV6);
+    g_reachable_nets.Remove(NET_ONION);
+    g_reachable_nets.Remove(NET_I2P);
+    g_reachable_nets.Remove(NET_CJDNS);
 
-    BOOST_CHECK(!IsReachable(NET_IPV4));
-    BOOST_CHECK(!IsReachable(NET_IPV6));
-    BOOST_CHECK(!IsReachable(NET_ONION));
-    BOOST_CHECK(!IsReachable(NET_I2P));
-    BOOST_CHECK(!IsReachable(NET_CJDNS));
+    BOOST_CHECK(!g_reachable_nets.Contains(NET_IPV4));
+    BOOST_CHECK(!g_reachable_nets.Contains(NET_IPV6));
+    BOOST_CHECK(!g_reachable_nets.Contains(NET_ONION));
+    BOOST_CHECK(!g_reachable_nets.Contains(NET_I2P));
+    BOOST_CHECK(!g_reachable_nets.Contains(NET_CJDNS));
 
-    SetReachable(NET_IPV4, true);
-    SetReachable(NET_IPV6, true);
-    SetReachable(NET_ONION, true);
-    SetReachable(NET_I2P, true);
-    SetReachable(NET_CJDNS, true);
+    g_reachable_nets.Add(NET_IPV4);
+    g_reachable_nets.Add(NET_IPV6);
+    g_reachable_nets.Add(NET_ONION);
+    g_reachable_nets.Add(NET_I2P);
+    g_reachable_nets.Add(NET_CJDNS);
 
-    BOOST_CHECK(IsReachable(NET_IPV4));
-    BOOST_CHECK(IsReachable(NET_IPV6));
-    BOOST_CHECK(IsReachable(NET_ONION));
-    BOOST_CHECK(IsReachable(NET_I2P));
-    BOOST_CHECK(IsReachable(NET_CJDNS));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_IPV4));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_IPV6));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_ONION));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_I2P));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_CJDNS));
 }
 
 BOOST_AUTO_TEST_CASE(LimitedAndReachable_NetworkCaseUnroutableAndInternal)
 {
-    BOOST_CHECK(IsReachable(NET_UNROUTABLE));
-    BOOST_CHECK(IsReachable(NET_INTERNAL));
+    // Should be reachable by default.
+    BOOST_CHECK(g_reachable_nets.Contains(NET_UNROUTABLE));
+    BOOST_CHECK(g_reachable_nets.Contains(NET_INTERNAL));
 
-    SetReachable(NET_UNROUTABLE, false);
-    SetReachable(NET_INTERNAL, false);
+    g_reachable_nets.RemoveAll();
 
-    BOOST_CHECK(IsReachable(NET_UNROUTABLE)); // Ignored for both networks
-    BOOST_CHECK(IsReachable(NET_INTERNAL));
+    BOOST_CHECK(!g_reachable_nets.Contains(NET_UNROUTABLE));
+    BOOST_CHECK(!g_reachable_nets.Contains(NET_INTERNAL));
+
+    g_reachable_nets.Add(NET_IPV4);
+    g_reachable_nets.Add(NET_IPV6);
+    g_reachable_nets.Add(NET_ONION);
+    g_reachable_nets.Add(NET_I2P);
+    g_reachable_nets.Add(NET_CJDNS);
+    g_reachable_nets.Add(NET_UNROUTABLE);
+    g_reachable_nets.Add(NET_INTERNAL);
 }
 
 CNetAddr UtilBuildAddress(unsigned char p1, unsigned char p2, unsigned char p3, unsigned char p4)
@@ -776,13 +784,13 @@ BOOST_AUTO_TEST_CASE(LimitedAndReachable_CNetAddr)
 {
     CNetAddr addr = UtilBuildAddress(0x001, 0x001, 0x001, 0x001); // 1.1.1.1
 
-    SetReachable(NET_IPV4, true);
-    BOOST_CHECK(IsReachable(addr));
+    g_reachable_nets.Add(NET_IPV4);
+    BOOST_CHECK(g_reachable_nets.Contains(addr));
 
-    SetReachable(NET_IPV4, false);
-    BOOST_CHECK(!IsReachable(addr));
+    g_reachable_nets.Remove(NET_IPV4);
+    BOOST_CHECK(!g_reachable_nets.Contains(addr));
 
-    SetReachable(NET_IPV4, true); // have to reset this, because this is stateful.
+    g_reachable_nets.Add(NET_IPV4); // have to reset this, because this is stateful.
 }
 
 
@@ -790,7 +798,7 @@ BOOST_AUTO_TEST_CASE(LocalAddress_BasicLifecycle)
 {
     CService addr = CService(UtilBuildAddress(0x002, 0x001, 0x001, 0x001), 1000); // 2.1.1.1:1000
 
-    SetReachable(NET_IPV4, true);
+    g_reachable_nets.Add(NET_IPV4);
 
     BOOST_CHECK(!IsLocal(addr));
     BOOST_CHECK(AddLocal(addr, 1000));
@@ -915,7 +923,7 @@ BOOST_AUTO_TEST_CASE(advertise_local_address)
                                        ConnectionType::OUTBOUND_FULL_RELAY,
                                        /*inbound_onion=*/false);
     };
-    SetReachable(NET_CJDNS, true);
+    g_reachable_nets.Add(NET_CJDNS);
 
     CAddress addr_ipv4{Lookup("1.2.3.4", 8333, false).value(), NODE_NONE};
     BOOST_REQUIRE(addr_ipv4.IsValid());
@@ -1031,9 +1039,11 @@ class V2TransportTester
     bool m_test_initiator; //!< Whether m_transport is the initiator (true) or responder (false)
 
     std::vector<uint8_t> m_sent_garbage; //!< The garbage we've sent to m_transport.
+    std::vector<uint8_t> m_recv_garbage; //!< The garbage we've received from m_transport.
     std::vector<uint8_t> m_to_send; //!< Bytes we have queued up to send to m_transport.
     std::vector<uint8_t> m_received; //!< Bytes we have received from m_transport.
     std::deque<CSerializedNetMsg> m_msg_to_send; //!< Messages to be sent *by* m_transport to us.
+    bool m_sent_aad{false};
 
 public:
     /** Construct a tester object. test_initiator: whether the tested transport is initiator. */
@@ -1078,9 +1088,9 @@ public:
                 bool reject{false};
                 auto msg = m_transport.GetReceivedMessage({}, reject);
                 if (reject) {
-                    ret.push_back(std::nullopt);
+                    ret.emplace_back(std::nullopt);
                 } else {
-                    ret.push_back(std::move(msg));
+                    ret.emplace_back(std::move(msg));
                 }
                 progress = true;
             }
@@ -1131,8 +1141,7 @@ public:
     /** Schedule specified garbage to be sent to the transport. */
     void SendGarbage(Span<const uint8_t> garbage)
     {
-        // Remember the specified garbage (so we can use it for constructing the garbage
-        // authentication packet).
+        // Remember the specified garbage (so we can use it as AAD).
         m_sent_garbage.assign(garbage.begin(), garbage.end());
         // Schedule it for sending.
         Send(m_sent_garbage);
@@ -1191,27 +1200,27 @@ public:
         Send(ciphertext);
     }
 
-    /** Schedule garbage terminator and authentication packet to be sent to the transport (only
-     *  after ReceiveKey). */
-    void SendGarbageTermAuth(size_t garb_auth_data_len = 0, bool garb_auth_ignore = false)
+    /** Schedule garbage terminator to be sent to the transport (only after ReceiveKey). */
+    void SendGarbageTerm()
     {
-        // Generate random data to include in the garbage authentication packet (ignored by peer).
-        auto garb_auth_data = g_insecure_rand_ctx.randbytes<uint8_t>(garb_auth_data_len);
         // Schedule the garbage terminator to be sent.
         Send(m_cipher.GetSendGarbageTerminator());
-        // Schedule the garbage authentication packet to be sent.
-        SendPacket(/*content=*/garb_auth_data, /*aad=*/m_sent_garbage, /*ignore=*/garb_auth_ignore);
     }
 
     /** Schedule version packet to be sent to the transport (only after ReceiveKey). */
     void SendVersion(Span<const uint8_t> version_data = {}, bool vers_ignore = false)
     {
-        SendPacket(/*content=*/version_data, /*aad=*/{}, /*ignore=*/vers_ignore);
+        Span<const std::uint8_t> aad;
+        // Set AAD to garbage only for first packet.
+        if (!m_sent_aad) aad = m_sent_garbage;
+        SendPacket(/*content=*/version_data, /*aad=*/aad, /*ignore=*/vers_ignore);
+        m_sent_aad = true;
     }
 
     /** Expect a packet to have been received from transport, process it, and return its contents
-     *  (only after ReceiveKey). By default, decoys are skipped. */
-    std::vector<uint8_t> ReceivePacket(Span<const std::byte> aad = {}, bool skip_decoy = true)
+     *  (only after ReceiveKey). Decoys are skipped. Optional associated authenticated data (AAD) is
+     *  expected in the first received packet, no matter if that is a decoy or not. */
+    std::vector<uint8_t> ReceivePacket(Span<const std::byte> aad = {})
     {
         std::vector<uint8_t> contents;
         // Loop as long as there are ignored packets that are to be skipped.
@@ -1232,16 +1241,18 @@ public:
                 /*ignore=*/ignore,
                 /*contents=*/MakeWritableByteSpan(contents));
             BOOST_CHECK(ret);
+            // Don't expect AAD in further packets.
+            aad = {};
             // Strip the processed packet's bytes off the front of the receive buffer.
             m_received.erase(m_received.begin(), m_received.begin() + size + BIP324Cipher::EXPANSION);
-            // Stop if the ignore bit is not set on this packet, or if we choose to not honor it.
-            if (!ignore || !skip_decoy) break;
+            // Stop if the ignore bit is not set on this packet.
+            if (!ignore) break;
         }
         return contents;
     }
 
-    /** Expect garbage, garbage terminator, and garbage auth packet to have been received, and
-     *  process them (only after ReceiveKey). */
+    /** Expect garbage and garbage terminator to have been received, and process them (only after
+     *  ReceiveKey). */
     void ReceiveGarbage()
     {
         // Figure out the garbage length.
@@ -1252,18 +1263,15 @@ public:
             if (term_span == m_cipher.GetReceiveGarbageTerminator()) break;
         }
         // Copy the garbage to a buffer.
-        std::vector<uint8_t> garbage(m_received.begin(), m_received.begin() + garblen);
+        m_recv_garbage.assign(m_received.begin(), m_received.begin() + garblen);
         // Strip garbage + garbage terminator off the front of the receive buffer.
         m_received.erase(m_received.begin(), m_received.begin() + garblen + BIP324Cipher::GARBAGE_TERMINATOR_LEN);
-        // Process the expected garbage authentication packet. Such a packet still functions as one
-        // even when its ignore bit is set to true, so we do not skip decoy packets here.
-        ReceivePacket(/*aad=*/MakeByteSpan(garbage), /*skip_decoy=*/false);
     }
 
     /** Expect version packet to have been received, and process it (only after ReceiveKey). */
     void ReceiveVersion()
     {
-        auto contents = ReceivePacket();
+        auto contents = ReceivePacket(/*aad=*/MakeByteSpan(m_recv_garbage));
         // Version packets from real BIP324 peers are expected to be empty, despite the fact that
         // this class supports *sending* non-empty version packets (to test that BIP324 peers
         // correctly ignore version packet contents).
@@ -1321,6 +1329,14 @@ public:
         SendPacket(contents);
     }
 
+    /** Test whether the transport's session ID matches the session ID we expect. */
+    void CompareSessionIDs() const
+    {
+        auto info = m_transport.GetInfo();
+        BOOST_CHECK(info.session_id);
+        BOOST_CHECK(uint256(MakeUCharSpan(m_cipher.GetSessionID())) == *info.session_id);
+    }
+
     /** Introduce a bit error in the data scheduled to be sent. */
     void Damage()
     {
@@ -1340,12 +1356,13 @@ BOOST_AUTO_TEST_CASE(v2transport_test)
         tester.SendKey();
         tester.SendGarbage();
         tester.ReceiveKey();
-        tester.SendGarbageTermAuth();
+        tester.SendGarbageTerm();
         tester.SendVersion();
         ret = tester.Interact();
         BOOST_REQUIRE(ret && ret->empty());
         tester.ReceiveGarbage();
         tester.ReceiveVersion();
+        tester.CompareSessionIDs();
         auto msg_data_1 = g_insecure_rand_ctx.randbytes<uint8_t>(InsecureRandRange(100000));
         auto msg_data_2 = g_insecure_rand_ctx.randbytes<uint8_t>(InsecureRandRange(1000));
         tester.SendMessage(uint8_t(4), msg_data_1); // cmpctblock short id
@@ -1380,12 +1397,13 @@ BOOST_AUTO_TEST_CASE(v2transport_test)
         auto ret = tester.Interact();
         BOOST_REQUIRE(ret && ret->empty());
         tester.ReceiveKey();
-        tester.SendGarbageTermAuth();
+        tester.SendGarbageTerm();
         tester.SendVersion();
         ret = tester.Interact();
         BOOST_REQUIRE(ret && ret->empty());
         tester.ReceiveGarbage();
         tester.ReceiveVersion();
+        tester.CompareSessionIDs();
         auto msg_data_1 = g_insecure_rand_ctx.randbytes<uint8_t>(InsecureRandRange(100000));
         auto msg_data_2 = g_insecure_rand_ctx.randbytes<uint8_t>(InsecureRandRange(1000));
         tester.SendMessage(uint8_t(14), msg_data_1); // inv short id
@@ -1408,10 +1426,6 @@ BOOST_AUTO_TEST_CASE(v2transport_test)
         bool initiator = InsecureRandBool();
         /** Use either 0 bytes or the maximum possible (4095 bytes) garbage length. */
         size_t garb_len = InsecureRandBool() ? 0 : V2Transport::MAX_GARBAGE_LEN;
-        /** Sometimes, use non-empty contents in the garbage authentication packet (which is to be ignored). */
-        size_t garb_auth_data_len = InsecureRandBool() ? 0 : InsecureRandRange(100000);
-        /** Whether to set the ignore bit on the garbage authentication packet (it still functions as garbage authentication). */
-        bool garb_ignore = InsecureRandBool();
         /** How many decoy packets to send before the version packet. */
         unsigned num_ignore_version = InsecureRandRange(10);
         /** What data to send in the version packet (ignored by BIP324 peers, but reserved for future extensions). */
@@ -1432,7 +1446,7 @@ BOOST_AUTO_TEST_CASE(v2transport_test)
             tester.SendGarbage(garb_len);
         }
         tester.ReceiveKey();
-        tester.SendGarbageTermAuth(garb_auth_data_len, garb_ignore);
+        tester.SendGarbageTerm();
         for (unsigned v = 0; v < num_ignore_version; ++v) {
             size_t ver_ign_data_len = InsecureRandBool() ? 0 : InsecureRandRange(1000);
             auto ver_ign_data = g_insecure_rand_ctx.randbytes<uint8_t>(ver_ign_data_len);
@@ -1443,6 +1457,7 @@ BOOST_AUTO_TEST_CASE(v2transport_test)
         BOOST_REQUIRE(ret && ret->empty());
         tester.ReceiveGarbage();
         tester.ReceiveVersion();
+        tester.CompareSessionIDs();
         for (unsigned d = 0; d < num_decoys_1; ++d) {
             auto decoy_data = g_insecure_rand_ctx.randbytes<uint8_t>(InsecureRandRange(1000));
             tester.SendPacket(/*content=*/decoy_data, /*aad=*/{}, /*ignore=*/true);
@@ -1476,7 +1491,7 @@ BOOST_AUTO_TEST_CASE(v2transport_test)
         tester.SendKey();
         tester.SendGarbage(V2Transport::MAX_GARBAGE_LEN + 1);
         tester.ReceiveKey();
-        tester.SendGarbageTermAuth();
+        tester.SendGarbageTerm();
         ret = tester.Interact();
         BOOST_CHECK(!ret);
     }
@@ -1489,7 +1504,7 @@ BOOST_AUTO_TEST_CASE(v2transport_test)
         auto ret = tester.Interact();
         BOOST_REQUIRE(ret && ret->empty());
         tester.ReceiveKey();
-        tester.SendGarbageTermAuth();
+        tester.SendGarbageTerm();
         ret = tester.Interact();
         BOOST_CHECK(!ret);
     }
@@ -1514,12 +1529,13 @@ BOOST_AUTO_TEST_CASE(v2transport_test)
         // the first 15 of them match.
         garbage[len_before + 15] ^= (uint8_t(1) << InsecureRandRange(8));
         tester.SendGarbage(garbage);
-        tester.SendGarbageTermAuth();
+        tester.SendGarbageTerm();
         tester.SendVersion();
         ret = tester.Interact();
         BOOST_REQUIRE(ret && ret->empty());
         tester.ReceiveGarbage();
         tester.ReceiveVersion();
+        tester.CompareSessionIDs();
         auto msg_data_1 = g_insecure_rand_ctx.randbytes<uint8_t>(4000000); // test that receiving 4M payload works
         auto msg_data_2 = g_insecure_rand_ctx.randbytes<uint8_t>(4000000); // test that sending 4M payload works
         tester.SendMessage(uint8_t(InsecureRandRange(223) + 33), {}); // unknown short id
