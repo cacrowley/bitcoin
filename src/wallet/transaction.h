@@ -330,15 +330,19 @@ public:
     bool isInactive() const { return state<TxStateInactive>(); }
     bool isUnconfirmed() const { return !isAbandoned() && !isConflicted() && !isConfirmed(); }
     bool isConfirmed() const { return state<TxStateConfirmed>(); }
-    const uint256& GetHash() const { return tx->GetHash(); }
-    const uint256& GetWitnessHash() const { return tx->GetWitnessHash(); }
+    const Txid& GetHash() const { return tx->GetHash(); }
+    const Wtxid& GetWitnessHash() const { return tx->GetWitnessHash(); }
     bool IsCoinBase() const { return tx->IsCoinBase(); }
 
+private:
     // Disable copying of CWalletTx objects to prevent bugs where instances get
     // copied in and out of the mapWallet map, and fields are updated in the
     // wrong copy.
-    CWalletTx(CWalletTx const &) = delete;
-    void operator=(CWalletTx const &x) = delete;
+    CWalletTx(const CWalletTx&) = default;
+    CWalletTx& operator=(const CWalletTx&) = default;
+public:
+    // Instead have an explicit copy function
+    void CopyFrom(const CWalletTx&);
 };
 
 struct WalletTxOrderComparator {

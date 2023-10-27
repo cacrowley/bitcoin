@@ -618,7 +618,7 @@ private:
 
         const CTransactionRef& m_ptx;
         /** Txid. */
-        const uint256& m_hash;
+        const Txid& m_hash;
         TxValidationState m_state;
         /** A temporary cache containing serialized transaction data for signature verification.
          * Reused across PolicyScriptChecks and ConsensusScriptChecks. */
@@ -1870,7 +1870,7 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState& state,
     // transaction).
     uint256 hashCacheEntry;
     CSHA256 hasher = g_scriptExecutionCacheHasher;
-    hasher.Write(tx.GetWitnessHash().begin(), 32).Write((unsigned char*)&flags, sizeof(flags)).Finalize(hashCacheEntry.begin());
+    hasher.Write(UCharCast(tx.GetWitnessHash().begin()), 32).Write((unsigned char*)&flags, sizeof(flags)).Finalize(hashCacheEntry.begin());
     AssertLockHeld(cs_main); //TODO: Remove this requirement by making CuckooCache not require external locks
     if (g_scriptExecutionCache.contains(hashCacheEntry, !cacheFullScriptStore)) {
         return true;
@@ -5396,6 +5396,11 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
             outpoint.n >= std::numeric_limits<decltype(outpoint.n)>::max() // Avoid integer wrap-around in coinstats.cpp:ApplyHash
         ) {
             LogPrintf("[snapshot] bad snapshot data after deserializing %d coins\n",
+                      coins_count - coins_left);
+            return false;
+        }
+        if (!MoneyRange(coin.out.nValue)) {
+            LogPrintf("[snapshot] bad snapshot data after deserializing %d coins - bad tx out value\n",
                       coins_count - coins_left);
             return false;
         }
