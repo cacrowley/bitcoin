@@ -497,6 +497,52 @@ RPCHelpMan getbalances()
     };
 }
 
+RPCHelpMan checkbalance()
+{
+    return RPCHelpMan{
+        "checkbalance",
+        "\nCheck that the calculated balance is correct.\n",
+        {},
+        RPCResult{RPCResult::Type::NUM, "", "The balance"},
+        RPCExamples{
+            HelpExampleCli("checkbalance", "") +
+            HelpExampleRpc("checkbalance", "")},
+        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
+    const std::shared_ptr<const CWallet> rpc_wallet = GetWalletForJSONRPCRequest(request);
+    if (!rpc_wallet) return UniValue::VNULL;
+    const CWallet& wallet = *rpc_wallet;
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    wallet.BlockUntilSyncedToCurrentChain();
+
+    LOCK(wallet.cs_wallet);
+
+    std::set<CScript> output_scripts;
+    for (const auto spkm : wallet.GetAllScriptPubKeyMans()) {
+        for (const auto& script : spkm->GetScriptPubKeys()) {
+            output_scripts.emplace(script);
+        }
+    }
+
+    // Get coins belonging to wallet scripts from utxo set
+    std::map<COutPoint, Coin> coins;
+    wallet.chain().getCoinsByScript(output_scripts, coins);
+
+    CAmount utxo_balance = 0;
+    for (const auto& it : coins) {
+        const Coin& coin = it.second;
+        utxo_balance += coin.out.nValue;
+    }
+
+    const auto balance = GetBalance(wallet);
+
+    return ValueFromAmount(utxo_balance);
+},
+    };
+}
+
 RPCHelpMan listunspent()
 {
     return RPCHelpMan{
