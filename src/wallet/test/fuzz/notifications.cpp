@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2022 The Bitcoin Core developers
+// Copyright (c) 2021-present The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -156,10 +156,9 @@ struct FuzzedWallet {
         coin_control.fOverrideFeeRate = fuzzed_data_provider.ConsumeBool();
         // Add solving data (m_external_provider and SelectExternal)?
 
-        CAmount fee_out;
         int change_position{fuzzed_data_provider.ConsumeIntegralInRange<int>(-1, tx.vout.size() - 1)};
         bilingual_str error;
-        (void)FundTransaction(*wallet, tx, fee_out, change_position, error, /*lockUnspents=*/false, subtract_fee_from_outputs, coin_control);
+        (void)FundTransaction(*wallet, tx, change_position, /*lockUnspents=*/false, subtract_fee_from_outputs, coin_control);
     }
 };
 
@@ -169,7 +168,7 @@ FUZZ_TARGET(wallet_notifications, .init = initialize_setup)
     // The total amount, to be distributed to the wallets a and b in txs
     // without fee. Thus, the balance of the wallets should always equal the
     // total amount.
-    const auto total_amount{ConsumeMoney(fuzzed_data_provider)};
+    const auto total_amount{ConsumeMoney(fuzzed_data_provider, /*max=*/MAX_MONEY / 100000)};
     FuzzedWallet a{
         "fuzzed_wallet_a",
         "tprv8ZgxMBicQKsPd1QwsGgzfu2pcPYbBosZhJknqreRHgsWx32nNEhMjGQX2cgFL8n6wz9xdDYwLcs78N4nsCo32cxEX8RBtwGsEGgybLiQJfk",

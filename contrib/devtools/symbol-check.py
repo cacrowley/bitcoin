@@ -32,7 +32,7 @@ import lief
 # See https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html for more info.
 
 MAX_VERSIONS = {
-'GCC':       (4,8,0),
+'GCC':       (4,3,0),
 'GLIBC': {
     lief.ELF.ARCH.x86_64: (2,27),
     lief.ELF.ARCH.ARM:    (2,27),
@@ -235,7 +235,7 @@ def check_MACHO_min_os(binary) -> bool:
     return False
 
 def check_MACHO_sdk(binary) -> bool:
-    if binary.build_version.sdk == [11, 0, 0]:
+    if binary.build_version.sdk == [14, 0, 0]:
         return True
     return False
 
